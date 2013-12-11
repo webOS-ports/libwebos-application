@@ -1,0 +1,8 @@
+libdir=@WEBOS_INSTALL_LIBDIR@
+includedir=@WEBOS_INSTALL_INCLUDEDIR@
+
+Name: libwebos-application
+Description: @WEBOS_PROJECT_SUMMARY@
+Version: @WEBOS_COMPONENT_VERSION@
+Libs: -L${libdir} -l@CMAKE_PROJECT_NAME@
+Cflags: -I${includedir}

@@ -19,6 +19,10 @@
 
 #include <stdbool.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 enum webos_applocation_low_memory_state {
 	WEBOS_APPLICATION_LOW_MEMORY_NORMAL,
 	WEBOS_APPLICATION_LOW_MEMORY_LOW,
@@ -36,5 +40,9 @@ struct webos_application_event_handlers {
 bool webos_application_init(const char *app_id, struct webos_application_event_handlers *event_handlers, void *user_data);
 bool webos_application_attach(GMainLoop *mainloop);
 void webos_application_cleanup(void);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

@@ -18,7 +18,7 @@ include_directories(include/public)
 include_directories(${GLIB2_INCLUDE_DIRS} ${LS2_INCLUDE_DIRS} ${PBNJSON_C_INCLUDE_DIRS})
 webos_add_compiler_flags(ALL -Wall)
 
-set(SOURCES src/webos_application.c src/luna_service_utils.h)
+set(SOURCES src/webos_application.c src/luna_service_utils.c)
 add_library(webos-application SHARED ${SOURCES})
 target_link_libraries(webos-application ${GLIB2_LDFLAGS} ${LS_LDFLAGS} ${PBNJSON_C_LDFLAGS})
 

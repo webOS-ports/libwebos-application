@@ -32,17 +32,12 @@ struct webos_application_config {
 
 struct webos_application_config *app_config = NULL;
 
-static bool handle_event_cb(LSHandle *handle, LSMessage *message, void *user_data);
-
-static LSMethod application_methods[] = {
-	{ "handleEvent", handle_event_cb },
-	{ NULL, NULL }
-};
-
-static bool handle_event_cb(LSHandle *handle, LSMessage *message, void *user_data)
+static bool register_cb(LSHandle *handle, LSMessage *message, void *user_data)
 {
 	const char *payload;
 	jvalue_ref parsed_obj = NULL;
+	jvalue_ref return_value_obj = NULL;
+	jvalue_ref subscribed_obj = NULL;
 	jvalue_ref event_obj = NULL;
 	jvalue_ref parameters_obj = NULL;
 	jvalue_ref state_obj = NULL;
@@ -51,11 +46,33 @@ static bool handle_event_cb(LSHandle *handle, LSMessage *message, void *user_dat
 	raw_buffer state_buf;
 	jvalue_ref reply_obj = NULL;
 	enum webos_applocation_low_memory_state lowmemory_state = WEBOS_APPLICATION_LOW_MEMORY_NORMAL;
+	bool return_value;
+	bool subscribed;
 
 	payload = LSMessageGetPayload(message);
 	parsed_obj = luna_service_message_parse_and_validate(payload);
 	if (jis_null(parsed_obj))
 		goto cleanup;
+
+	if (!app_config->registered) {
+		if (!jobject_get_exists(parsed_obj, J_CSTR_TO_BUF("returnValue"), &return_value_obj) ||
+			!jis_boolean(return_value_obj))
+			goto cleanup;
+
+		if (!jobject_get_exists(parsed_obj, J_CSTR_TO_BUF("subscribed"), &subscribed_obj) ||
+			!jis_boolean(subscribed_obj))
+			goto cleanup;
+
+		jboolean_get(return_value_obj, &return_value);
+		jboolean_get(subscribed_obj, &subscribed);
+
+		if (return_value && subscribed)
+			app_config->registered = true;
+
+		goto cleanup;
+	}
+
+	app_config->registered = true;
 
 	if (!jobject_get_exists(parsed_obj, J_CSTR_TO_BUF("event"), &event_obj) ||
 		!jis_string(event_obj))
@@ -106,22 +123,9 @@ static bool handle_event_cb(LSHandle *handle, LSMessage *message, void *user_dat
 		g_warning("Got unknown event from application manager: %s", event_buf.m_str);
 	}
 
-	reply_obj = jobject_create();
-	jobject_put(reply_obj, J_CSTR_TO_JVAL("returnValue"), jboolean_create(true));
-
-	if (!luna_service_message_validate_and_send(handle, message, reply_obj))
-		goto cleanup;
-
 cleanup:
 	if (!jis_null(parsed_obj))
 		j_release(&parsed_obj);
-
-	return true;
-}
-
-static bool register_cb(LSHandle *handle, LSMessage *message, void *user_data)
-{
-	app_config->registered = true;
 
 	return true;
 }
@@ -130,6 +134,7 @@ bool webos_application_init(const char *app_id, struct webos_application_event_h
 {
 	LSHandle *service_handle;
 	LSError lserror;
+	char *payload;
 
 	if (app_config != NULL)
 		return false;
@@ -139,7 +144,7 @@ bool webos_application_init(const char *app_id, struct webos_application_event_h
 
 	LSErrorInit(&lserror);
 
-	if (!LSRegister(app_id, &service_handle, &lserror)) {
+	if (!LSRegister(NULL, &service_handle, &lserror)) {
 		g_warning("Failed to register LS2 service object: %s", lserror.message);
 		LSErrorFree(&lserror);
 		return false;
@@ -154,23 +159,18 @@ bool webos_application_init(const char *app_id, struct webos_application_event_h
 	app_config->user_data = user_data;
 	app_config->service_handle = service_handle;
 
-	if (!LSRegisterCategory(service_handle, "/", application_methods,
-							NULL, NULL, &lserror)) {
-		g_warning("Could not register service category: %s", lserror.message);
-		LSErrorFree(&lserror);
-		webos_application_cleanup();
-		return false;
-	}
+	payload = g_strdup_printf("{\"subscribe\":true,\"appId\":\"%s\"}", app_config->app_id);
 
-#if 0
-	if (!LSCall(app_config->service_handle, "luna://com.palm.applicationManager/registerApplicationEventHandler",
-				"{}", register_cb, NULL, NULL, &lserror)) {
+    if (!LSCall(app_config->service_handle, "luna://com.palm.applicationManager/registerApplication",
+                payload, register_cb, NULL, NULL, &lserror)) {
 		g_warning("Failed to register application events handler: %s", lserror.message);
 		LSErrorFree(&lserror);
 		webos_application_cleanup();
+		g_free(payload);
 		return false;
 	}
-#endif
+
+	g_free(payload);
 
 	return true;
 }

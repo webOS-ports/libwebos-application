@@ -20,6 +20,6 @@ webos_add_compiler_flags(ALL -Wall)
 
 set(SOURCES src/webos_application.c src/luna_service_utils.c)
 add_library(webos-application SHARED ${SOURCES})
-target_link_libraries(webos-application ${GLIB2_LDFLAGS} ${LS_LDFLAGS} ${PBNJSON_C_LDFLAGS})
+target_link_libraries(webos-application ${GLIB2_LDFLAGS} ${LS2_LDFLAGS} ${PBNJSON_C_LDFLAGS})
 
 webos_build_library()

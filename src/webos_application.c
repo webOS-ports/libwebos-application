@@ -32,6 +32,23 @@ struct webos_application_config {
 
 struct webos_application_config *app_config = NULL;
 
+bool webos_application_get_handle(char **app_id, LSHandle **service_handle)
+{
+	if(!app_id || !service_handle) return false;
+	
+	*app_id = NULL;
+	*service_handle = NULL;
+
+	if(app_config) {
+		*app_id = g_strdup(app_config->app_id);
+		*service_handle = app_config->service_handle;
+
+		return true;
+	}
+
+	return false;
+}
+
 static bool register_cb(LSHandle *handle, LSMessage *message, void *user_data)
 {
 	const char *payload;
@@ -130,7 +147,7 @@ cleanup:
 	return true;
 }
 
-bool webos_application_init(const char *app_id, struct webos_application_event_handlers *event_handlers, void *user_data)
+bool webos_application_init(const char *app_id, const char *service_name, struct webos_application_event_handlers *event_handlers, void *user_data)
 {
 	LSHandle *service_handle;
 	LSError lserror;
@@ -142,9 +159,12 @@ bool webos_application_init(const char *app_id, struct webos_application_event_h
 	if (app_id == NULL || strlen(app_id) == 0)
 		return false;
 
+	if (service_name == NULL)
+		service_name = app_id;
+
 	LSErrorInit(&lserror);
 
-	if (!LSRegister(NULL, &service_handle, &lserror)) {
+	if (!LSRegister(service_name, &service_handle, &lserror)) {
 		g_warning("Failed to register LS2 service object: %s", lserror.message);
 		LSErrorFree(&lserror);
 		return false;

@@ -37,9 +37,33 @@ struct webos_application_event_handlers {
 	void (*lowmemory)(enum webos_applocation_low_memory_state state, void *user_data);
 };
 
-bool webos_application_init(const char *app_id, struct webos_application_event_handlers *event_handlers, void *user_data);
+/*
+ *  Register an application on LS2 bus and declare it to the Application Manager
+ *  @param app_id          the appId to give to the Application Manager
+ *  @param service_name    the name of the service on the LS2 bus (if NULL, app_id is used). Can be a different name if application is run from a container
+ *  @param event_handlers  set of facultative callback pointers that will be called when the corresponding event occurs
+ *  @param user_data       user data to pass to the event handlers
+ */
+bool webos_application_init(const char *app_id, const char *service_name, struct webos_application_event_handlers *event_handlers, void *user_data);
+
+/*
+ *  Attach the application to a GLib event loop
+ */
 bool webos_application_attach(GMainLoop *mainloop);
+
+/*
+ *  Unregister app and free resources
+ */
 void webos_application_cleanup(void);
+
+/*
+ * Retrieve current registered application service handle
+ * @param app_id[out]          appId known by the Application Manager
+ * @param service_handle[out]  main service handle of the application
+ * @return true is success
+           false is no handle is registered yet.
+ */
+bool webos_application_get_handle(char **app_id, struct LSHandle **service_handle);
 
 #ifdef __cplusplus
 }

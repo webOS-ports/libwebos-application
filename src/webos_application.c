@@ -16,7 +16,7 @@
 
 #include <string.h>
 #include <glib.h>
-#include <lunaservice.h>
+#include <luna-service2/lunaservice.h>
 #include <pbnjson.h>
 
 #include "webos_application.h"
